@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Table Mapping</title>
+  <link rel="stylesheet" href="./utilities/font.css">
+  <script src="./utilities/react-production.js"></script>
+  <script src="./utilities/reactdom-production.js"></script>
+  <script src="./utilities/reactflow-umd.js"></script>
+  <link rel="stylesheet" href="./utilities/reactflow-style.css">
+  <link rel="stylesheet" href="./styles/index.css">
+</head>
+
+<body>
+  <div id="root"></div>
+
+  <script type="module">
+    import { inferTypeFromValue } from './script/utils.js'
+    import { COLORS, TYPES } from './script/const-data.js'
+    (function () {
+      const { createElement: h, useState, useCallback, useEffect, useRef, Fragment } = React;
+      const {
+        ReactFlow, ReactFlowProvider,
+        Background, BackgroundVariant,
+        Controls,
+        Handle, Position,
+        addEdge,
+        useNodesState, useEdgesState,
+        MiniMap
+      } = window.ReactFlow;
+
+      let _nid = 0;
+      const uid = () => 'n' + Date.now() + (++_nid);
+
+      // ---- TYPE COLOR CLASS ----
+      function typeClass(t) {
+        if (t === 'int' || t === 'float') return 'field-type t-int';
+        if (t === 'bool') return 'field-type t-bool';
+        if (t === 'date') return 'field-type t-date';
+        if (t === 'uuid') return 'field-type t-uuid';
+        return 'field-type';
+      }
+
+      // ---- SVG ICONS ----
+      const IconEdit = () => h('svg', { width: 12, height: 12, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
+        h('path', { d: 'M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7' }),
+        h('path', { d: 'M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z' })
+      );
+
+      const IconTrash = () => h('svg', { width: 12, height: 12, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
+        h('polyline', { points: '3 6 5 6 21 6' }),
+        h('path', { d: 'M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6' }),
+        h('path', { d: 'M10 11v6M14 11v6' }),
+        h('path', { d: 'M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2' })
+      );
+
+      const IconPlus = () => h('svg', { width: 12, height: 12, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.5, strokeLinecap: 'round' },
+        h('line', { x1: 12, y1: 5, x2: 12, y2: 19 }), h('line', { x1: 5, y1: 12, x2: 19, y2: 12 })
+      );
+
+      const IconSQL = () => h('svg', { width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
+        h('ellipse', { cx: 12, cy: 5, rx: 9, ry: 3 }),
+        h('path', { d: 'M3 5v14a9 3 0 0018 0V5' }),
+        h('path', { d: 'M3 12a9 3 0 0018 0' })
+      );
+
+      const IconSimple = () => h('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
+        h('rect', { x: 3, y: 3, width: 18, height: 18, rx: 2 }),
+        h('line', { x1: 3, y1: 9, x2: 21, y2: 9 }),
+        h('line', { x1: 9, y1: 21, x2: 9, y2: 9 })
+      )
+
+      const IconJSON = () => h('svg', {
+        width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round'
+      },
+        h('path', { d: 'M9 4c-2 0-3 1-3 3v2c0 1-1 2-2 2 1 0 2 1 2 2v2c0 2 1 3 3 3' }),
+        h('path', { d: 'M15 4c2 0 3 1 3 3v2c0 1 1 2 2 2-1 0-2 1-2 2v2c0 2-1 3-3 3' })
+      );
+
+      // ---- TABLE NODE ----
+      function TableNode({ id, data }) {
+        const color = data.color || COLORS[0];
+        const fields = data.fields || [];
+        const api = data._api;
+        return h('div', { className: 'tbl-node' },
+          h('div', { className: 'tbl-header' },
+            h('div', { className: 'tbl-header-left' },
+              h('div', { className: 'tbl-color-bar', style: { background: color } }),
+              h('span', { className: 'tbl-name' }, data.label),
+              h('span', { className: 'tbl-count' }, fields.length)
+            ),
+            h('div', { className: 'tbl-header-actions' },
+              h('button', { className: 'hdr-btn', title: 'Modifier', onClick: e => { e.stopPropagation(); api && api.editNode(id, data) } }, h(IconEdit)),
+              h('button', { className: 'hdr-btn danger', title: 'Supprimer', onClick: e => { e.stopPropagation(); api && api.deleteNode(id) } }, h(IconTrash))
+            )
+          ),
+          fields.map(f => h('div', { key: f.id, className: 'tbl-row' },
+            h(Handle, {
+              type: 'target', position: Position.Left, id: `${f.id}-t`,
+              style: { top: '50%', transform: 'translateY(-50%)', left: -5, width: 8, height: 8 }
+            }),
+            h('span', { className: 'field-name' }, f.name),
+            h('span', { className: typeClass(f.type) }, f.type),
+            h('button', { className: 'field-del', onClick: e => { e.stopPropagation(); api && api.delField(id, f.id) } }, '\u00d7'),
+            h(Handle, {
+              type: 'source', position: Position.Right, id: `${f.id}-s`,
+              style: { top: '50%', transform: 'translateY(-50%)', right: -5, width: 8, height: 8 }
+            })
+          )),
+          h('button', { className: 'add-field-btn', onClick: e => { e.stopPropagation(); api && api.addField(id) } },
+            h(IconPlus), 'Nouveau champ'
+          )
+        );
+      }
+
+      const nodeTypes = { tableNode: TableNode };
+
+      // ---- MODAL ----
+      function Modal({ title, children, onClose }) {
+        useEffect(() => {
+          const fn = e => e.key === 'Escape' && onClose();
+          window.addEventListener('keydown', fn);
+          return () => window.removeEventListener('keydown', fn);
+        }, []);
+        return h('div', { className: 'modal-overlay', onClick: e => e.target === e.currentTarget && onClose() },
+          h('div', { className: 'modal' },
+            h('div', { className: 'modal-title' }, title),
+            children
+          )
+        );
+      }
+
+      function ColorPicker({ value, onChange }) {
+        return h('div', { className: 'color-swatches' },
+          COLORS.map(c => h('div', {
+            key: c,
+            className: 'color-swatch' + (value === c ? ' active' : ''),
+            style: { background: c, color: c },
+            onClick: () => onChange(c)
+          }))
+        );
+      }
+
+      // ---- MAIN APP ----
+      function App() {
+        const [nodes, setNodes, onNodesChange] = useNodesState([]);
+        const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+        // POUR LE TOOLBAR
+        const [showAddMenu, setShowAddMenu] = useState(false);
+        const addMenuRef = useRef(null);
+
+        // SQL
+        const [sqlModal, setSqlModal] = useState(false);
+        const [sqlText, setSqlText] = useState('');
+        const [sqlError, setSqlError] = useState('');
+
+        // JSON
+        const [jsonModal, setJsonModal] = useState(false);
+        const [jsonTitle, setJsonTitle] = useState('');
+        const [jsonText, setJsonText] = useState('');
+        const [jsonError, setJsonError] = useState('');
+
+        // Modals
+        const [newTableModal, setNewTableModal] = useState(false);
+        const [editNodeModal, setEditNodeModal] = useState(null);  // {nodeId, label, color}
+        const [addFieldModal, setAddFieldModal] = useState(null);  // {nodeId}
+        const [deleteConfirm, setDeleteConfirm] = useState(null);  // nodeId
+
+        // Form state
+        const [formLabel, setFormLabel] = useState('');
+        const [formColor, setFormColor] = useState(COLORS[0]);
+        const [formFieldName, setFormFieldName] = useState('');
+        const [formFieldType, setFormFieldType] = useState('string');
+
+        // Ajoute cet effet pour fermer le menu au clic extérieur
+        useEffect(() => {
+          const fn = e => { if (addMenuRef.current && !addMenuRef.current.contains(e.target)) setShowAddMenu(false); };
+          document.addEventListener('mousedown', fn);
+          return () => document.removeEventListener('mousedown', fn);
+        }, []);
+
+        // API passed into nodes
+        const api = {
+          addField: (nodeId) => { setFormFieldName(''); setFormFieldType('string'); setAddFieldModal({ nodeId }); },
+          delField: (nodeId, fid) => setNodes(ns => ns.map(n => n.id === nodeId ? { ...n, data: { ...n.data, fields: n.data.fields.filter(f => f.id !== fid) } } : n)),
+          editNode: (nodeId, data) => { setFormLabel(data.label); setFormColor(data.color || COLORS[0]); setEditNodeModal({ nodeId }); },
+          deleteNode: (nodeId) => setDeleteConfirm(nodeId),
+        };
+
+        const nodesWithApi = nodes.map(n => ({ ...n, data: { ...n.data, _api: api } }));
+
+        const onConnect = useCallback(params =>
+          setEdges(es => addEdge({ ...params, type: 'default', animated: true, style: { stroke: '#4f7cff', strokeWidth: 1.5 } }, es)),
+          [setEdges]
+        );
+
+        // Add table
+        const openNewTable = () => {
+          setFormLabel('');
+          setFormColor(COLORS[nodes.length % COLORS.length]);
+          setNewTableModal(true);
+        };
+        const confirmNewTable = () => {
+          if (!formLabel.trim()) return;
+          const id = uid();
+          const cx = 120 + Math.random() * 500;
+          const cy = 100 + Math.random() * 300;
+          setNodes(ns => [...ns, { id, type: 'tableNode', position: { x: cx, y: cy }, data: { label: formLabel.trim(), color: formColor, fields: [] } }]);
+          setNewTableModal(false);
+        };
+
+        // Edit table
+        const confirmEditNode = () => {
+          if (!editNodeModal || !formLabel.trim()) return;
+          setNodes(ns => ns.map(n => n.id === editNodeModal.nodeId ? { ...n, data: { ...n.data, label: formLabel.trim(), color: formColor } } : n));
+          setEditNodeModal(null);
+        };
+
+        // Add field
+        const confirmAddField = () => {
+          if (!addFieldModal || !formFieldName.trim()) return;
+          setNodes(ns => ns.map(n => n.id === addFieldModal.nodeId ?
+            { ...n, data: { ...n.data, fields: [...n.data.fields, { id: 'f' + Date.now(), name: formFieldName.trim(), type: formFieldType }] } } : n));
+          setAddFieldModal(null);
+        };
+
+        // Delete table
+        const confirmDeleteNode = () => {
+          if (!deleteConfirm) return;
+          setNodes(ns => ns.filter(n => n.id !== deleteConfirm));
+          setEdges(es => es.filter(e => e.source !== deleteConfirm && e.target !== deleteConfirm));
+          setDeleteConfirm(null);
+        };
+
+        // Add from SQL
+        const parseSQLAndCreate = () => {
+          setSqlError('');
+          const tables = [];
+          // Regex pour capturer chaque CREATE TABLE
+          const tableRx = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[`"]?(\w+)[`"]?\s*\(([^;]+)\)/gim;
+          let tMatch;
+          while ((tMatch = tableRx.exec(sqlText)) !== null) {
+            const tableName = tMatch[1];
+            const body = tMatch[2];
+            const fields = [];
+            // Ligne par ligne, ignorer les contraintes
+            const lines = body.split(',').map(l => l.trim()).filter(Boolean);
+            for (const line of lines) {
+              // Ignorer PRIMARY KEY(...), FOREIGN KEY, UNIQUE, INDEX, KEY, CONSTRAINT
+              if (/^(PRIMARY|FOREIGN|UNIQUE|INDEX|KEY|CONSTRAINT|CHECK)\b/i.test(line)) continue;
+              // Capturer nom + type
+              const colRx = /^[`"]?(\w+)[`"]?\s+(\w+)/i;
+              const m = line.match(colRx);
+              if (!m) continue;
+              const rawType = m[2].toLowerCase();
+              // Normaliser vers nos types connus
+              let type = 'string';
+              if (/^int|^integer|^bigint|^smallint|^tinyint/.test(rawType)) type = 'int';
+              else if (/^float|^double|^decimal|^numeric|^real/.test(rawType)) type = 'float';
+              else if (/^bool/.test(rawType)) type = 'bool';
+              else if (/^date|^time|^timestamp/.test(rawType)) type = 'date';
+              else if (/^uuid/.test(rawType)) type = 'uuid';
+              else if (/^text|^clob/.test(rawType)) type = 'text';
+              else if (/^json|^jsonb/.test(rawType)) type = 'json';
+              else if (/^enum/.test(rawType)) type = 'enum';
+              fields.push({ id: 'f' + Date.now() + Math.random(), name: m[1], type });
+            }
+            tables.push({ name: tableName, fields });
+          }
+          if (tables.length === 0) {
+            setSqlError('Aucune table trouvée. Vérifie la syntaxe CREATE TABLE.');
+            return;
+          }
+          // Créer les noeuds
+          const newNodes = tables.map((t, i) => ({
+            id: uid(),
+            type: 'tableNode',
+            position: { x: 80 + i * 320, y: 100 + i * 60 },
+            data: { label: t.name, color: COLORS[i % COLORS.length], fields: t.fields }
+          }));
+          setNodes(ns => [...ns, ...newNodes]);
+          setSqlModal(false);
+          setSqlText('');
+        };
+
+        // Add from JSON
+        const parseJSONAndCreate = () => {
+          setJsonError('');
+
+          let data;
+          try {
+            data = JSON.parse(jsonText);
+          } catch (err) {
+            setJsonError('JSON invalide.');
+            return;
+          }
+
+          // si c'est un tableau on prend le premier objet
+          const obj = Array.isArray(data) ? data[0] : data;
+
+          if (typeof obj !== 'object' || obj === null) {
+            setJsonError('Le JSON doit contenir un objet.');
+            return;
+          }
+          const fields = [];
+
+          Object.entries(obj).forEach(([key, value]) => {
+            let type = 'string';
+            if (value === null) {
+              type = 'string';
+            }
+            else if (typeof value === 'number') {
+              type = Number.isInteger(value) ? 'int' : 'float';
+            }
+            else if (typeof value === 'boolean') {
+              type = 'bool';
+            }
+            else if (typeof value === 'object') {
+              type = 'json';
+            }
+            else if (typeof value === 'string') {
+              // détection date
+              if (/^\d{4}-\d{2}-\d{2}/.test(value)) type = 'date';
+              // détection uuid
+              else if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}/i.test(value)) type = 'uuid';
+              else type = 'string';
+            }
+
+            fields.push({
+              id: 'f' + Date.now() + Math.random(),
+              name: key,
+              type
+            });
+          });
+
+          const newNode = {
+            id: uid(),
+            type: 'tableNode',
+            position: { x: 80, y: 100 },
+            data: {
+              label: jsonTitle,
+              color: COLORS[0],
+              fields
+            }
+          };
+
+          setNodes(ns => [...ns, newNode]);
+
+          setJsonModal(false);
+          setJsonText('');
+          setJsonTitle('');
+        };
+
+
+        const hasNodes = nodes.length > 0;
+
+        return h(Fragment, null,
+          // Toolbar
+          h('div', { id: 'toolbar' },
+            h('div', { className: 'app-title' }, h('span', null, '⬡'), ' Mapping'),
+            h('div', { style: { position: 'relative' }, ref: addMenuRef },
+              h('button', {
+                className: 'tb-btn primary',
+                onClick: () => setShowAddMenu(v => !v),
+                style: { display: 'flex', alignItems: 'center', gap: 6, paddingRight: 10 }
+              },
+                h(IconPlus),
+                ' Ajouter',
+                h('svg', {
+                  width: 10, height: 10, viewBox: '0 0 24 24', fill: 'none',
+                  stroke: 'currentColor', strokeWidth: 2.5, strokeLinecap: 'round', strokeLinejoin: 'round',
+                  style: { marginLeft: 2, transition: 'transform .2s', transform: showAddMenu ? 'rotate(180deg)' : 'rotate(0deg)' }
+                }, h('polyline', { points: '6 9 12 15 18 9' }))
+              ),
+              showAddMenu && h('div', {
+                style: {
+                  position: 'absolute', top: 'calc(100% + 8px)', left: 0,
+                  background: 'var(--bg2)', border: '1px solid var(--border2)',
+                  borderRadius: 10, padding: 4, minWidth: 200,
+                  boxShadow: '0 12px 40px rgba(0,0,0,.5)',
+                  zIndex: 2000,
+                  animation: 'slideUp .15s cubic-bezier(.16,1,.3,1)'
+                }
+              },
+                // Option 1 — Table vide
+                h('button', {
+                  className: 'drop-item',
+                  onClick: () => { setShowAddMenu(false); openNewTable(); }
+                },
+                  h('div', { className: 'drop-item-icon' },
+                    h(IconSimple)
+                  ),
+                  h('div', { className: 'drop-item-text' },
+                    h('span', { className: 'drop-item-label' }, 'Table vide'),
+                    h('span', { className: 'drop-item-desc' }, 'Ajoute les champs manuellement')
+                  )
+                ),
+                // Option 2 — Depuis SQL
+                h('button', {
+                  className: 'drop-item',
+                  onClick: () => { setShowAddMenu(false); setSqlModal(true); }
+                },
+                  h('div', { className: 'drop-item-icon' },
+                    h(IconSQL)
+                  ),
+                  h('div', { className: 'drop-item-text' },
+                    h('span', { className: 'drop-item-label' }, 'Depuis SQL'),
+                    h('span', { className: 'drop-item-desc' }, 'Importe via CREATE TABLE')
+                  )
+                ),
+                // Option 3 - Depuis le JSON
+                h('button', {
+                  className: 'drop-item',
+                  onClick: () => { setShowAddMenu(false); setJsonModal(true); }
+                },
+                  h('div', { className: 'drop-item-icon' },
+                    h(IconJSON)
+                  ),
+                  h('div', { className: 'drop-item-text' },
+                    h('span', { className: 'drop-item-label' }, 'Depuis JSON'),
+                    h('span', { className: 'drop-item-desc' }, 'Importe via String')
+                  )
+                )
+                // → Ajoute tes prochaines options ici, même structure
+              )
+            ),
+            hasNodes && h('button', {
+              className: 'tb-btn',
+              onClick: () => { if (confirm('Tout effacer ?')) { setNodes([]); setEdges([]) } },
+              style: { color: '#ff5f57' }
+            }, 'Tout effacer')
+          ),
+
+          // Canvas
+          h(ReactFlow, {
+            nodes: nodesWithApi, edges,
+            onNodesChange, onEdgesChange, onConnect,
+            nodeTypes, fitView: true,
+            connectionLineStyle: { stroke: '#4f7cff', strokeWidth: 1.5, strokeDasharray: '5 3' },
+            defaultEdgeOptions: { type: 'default', animated: true },
+            deleteKeyCode: 'Delete',
+            proOptions: { hideAttribution: true }
+          },
+            h(Background, {
+              color: 'rgba(255,255,255,0.04)',
+              gap: 28, size: 1,
+              variant: 'dots'
+            }),
+            h(Controls, { showInteractive: false })
+          ),
+
+          // Empty state
+          h('div', { id: 'empty', className: hasNodes ? 'hidden' : '' },
+            h('h2', null, 'Espace vide'),
+            h('p', null, 'Crée ta première table pour commencer le mapping'),
+            h('div', { className: 'arrow-hint' },
+              h('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.5 },
+                h('path', { d: 'M5 12h14M12 5l7 7-7 7' })
+              ),
+              'Clique sur "Nouvelle table" ci-dessus'
+            )
+          ),
+
+          // MODAL: Nouvelle table
+          newTableModal && h(Modal, { title: 'Nouvelle table', onClose: () => setNewTableModal(false) },
+            h('label', null, 'Nom'),
+            h('input', {
+              placeholder: 'ex: utilisateurs, produits…',
+              value: formLabel,
+              onChange: e => setFormLabel(e.target.value),
+              onKeyDown: e => e.key === 'Enter' && confirmNewTable(),
+              autoFocus: true
+            }),
+            h('label', null, 'Couleur'),
+            h(ColorPicker, { value: formColor, onChange: setFormColor }),
+            h('div', { className: 'modal-actions' },
+              h('button', { className: 'btn', onClick: () => setNewTableModal(false) }, 'Annuler'),
+              h('button', { className: 'btn primary', onClick: confirmNewTable }, 'Créer')
+            )
+          ),
+
+          // MODAL: Éditer table
+          editNodeModal && h(Modal, { title: 'Modifier la table', onClose: () => setEditNodeModal(null) },
+            h('label', null, 'Nom'),
+            h('input', {
+              value: formLabel,
+              onChange: e => setFormLabel(e.target.value),
+              onKeyDown: e => e.key === 'Enter' && confirmEditNode(),
+              autoFocus: true
+            }),
+            h('label', null, 'Couleur'),
+            h(ColorPicker, { value: formColor, onChange: setFormColor }),
+            h('div', { className: 'modal-actions' },
+              h('button', { className: 'btn', onClick: () => setEditNodeModal(null) }, 'Annuler'),
+              h('button', { className: 'btn primary', onClick: confirmEditNode }, 'Sauvegarder')
+            )
+          ),
+
+          // MODAL: Ajouter champ
+          addFieldModal && h(Modal, { title: 'Nouveau champ', onClose: () => setAddFieldModal(null) },
+            h('label', null, 'Nom du champ'),
+            h('input', {
+              placeholder: 'ex: email, created_at…',
+              value: formFieldName,
+              onChange: e => setFormFieldName(e.target.value),
+              onKeyDown: e => e.key === 'Enter' && confirmAddField(),
+              autoFocus: true,
+              style: { fontFamily: "'DM Mono',monospace" }
+            }),
+            h('label', null, 'Type'),
+            h('select', { value: formFieldType, onChange: e => setFormFieldType(e.target.value) },
+              TYPES.map(t => h('option', { key: t, value: t }, t))
+            ),
+            h('div', { className: 'modal-actions' },
+              h('button', { className: 'btn', onClick: () => setAddFieldModal(null) }, 'Annuler'),
+              h('button', { className: 'btn primary', onClick: confirmAddField }, 'Ajouter')
+            )
+          ),
+
+          // MODAL : Pour rajouter en fonction du SQL
+          sqlModal && h(Modal, { title: 'Importer depuis SQL', onClose: () => { setSqlModal(false); setSqlError('') } },
+            h('label', null, 'Requête CREATE TABLE'),
+            h('textarea', {
+              placeholder: `CREATE TABLE users (\n  id UUID,\n  email VARCHAR(255),\n  created_at TIMESTAMP\n);`,
+              value: sqlText,
+              onChange: e => setSqlText(e.target.value),
+              rows: 10,
+              style: {
+                width: '100%', boxSizing: 'border-box', resize: 'vertical',
+                background: 'var(--bg3)', border: '1px solid var(--border2)', borderRadius: 8,
+                padding: '9px 12px', fontSize: 12, fontFamily: "'DM Mono',monospace",
+                color: 'var(--text)', outline: 'none', marginBottom: sqlError ? 8 : 16,
+                lineHeight: 1.7, minHeight: 180
+              }
+            }),
+            sqlError && h('p', { style: { fontSize: 12, color: 'var(--red)', marginBottom: 16 } }, sqlError),
+            h('div', { className: 'modal-actions' },
+              h('button', { className: 'btn', onClick: () => { setSqlModal(false); setSqlError('') } }, 'Annuler'),
+              h('button', { className: 'btn primary', onClick: parseSQLAndCreate }, 'Importer')
+            )
+          ),
+
+          // MODAL : Pour rajouter du JSON
+          jsonModal && h(Modal, { title: 'Nouvelle table', onClose: () => { setJsonModal(false); setJsonError('') } },
+            h('label', null, 'Nom de la Table'),
+            h('input', {
+              placeholder: 'ex: utilisateurs, produits…',
+              value: jsonTitle,
+              onChange: e => setJsonTitle(e.target.value),
+            }),
+            h('label', null, 'Couleur'),
+            h(ColorPicker, { value: formColor, onChange: setFormColor }),
+            h('textarea', {
+              placeholder: `Users {\n  id : ugi7-GFGH-Gsgh5-Hfffsq,\n  email : ulricg*****.gmail.com\n}`,
+              value: jsonText,
+              onChange: e => setJsonText(e.target.value),
+              rows: 10,
+              style: {
+                width: '100%', boxSizing: 'border-box', resize: 'vertical',
+                background: 'var(--bg3)', border: '1px solid var(--border2)', borderRadius: 8,
+                padding: '9px 12px', fontSize: 12, fontFamily: "'DM Mono',monospace",
+                color: 'var(--text)', outline: 'none', marginBottom: sqlError ? 8 : 16,
+                lineHeight: 1.7, minHeight: 180
+              }
+            }),
+            jsonError && h('p', { style: { fontSize: 12, color: 'var(--red)', marginBottom: 16 } }, jsonError),
+            h('div', { className: 'modal-actions' },
+              h('button', { className: 'btn', onClick: () => { setJsonModal(false); setJsonError('') } }, 'Annuler'),
+              h('button', { className: 'btn primary', onClick: parseJSONAndCreate }, 'Importer')
+            )
+          ),
+
+          // MODAL: Confirmer suppression
+          deleteConfirm && h(Modal, { title: 'Supprimer cette table ?', onClose: () => setDeleteConfirm(null) },
+            h('p', { style: { fontSize: 13, color: 'var(--text2)', marginBottom: 20, lineHeight: 1.6 } },
+              'Cette action supprimera la table et toutes ses connexions. Elle est irréversible.'
+            ),
+            h('div', { className: 'modal-actions' },
+              h('button', { className: 'btn', onClick: () => setDeleteConfirm(null) }, 'Annuler'),
+              h('button', { className: 'btn danger', onClick: confirmDeleteNode }, 'Supprimer')
+            )
+          )
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(h(ReactFlowProvider, null, h(App)));
+    })();
+  </script>
+</body>
+
+</html>

@@ -9,6 +9,7 @@
   <script src="./utilities/react-production.js"></script>
   <script src="./utilities/reactdom-production.js"></script>
   <script src="./utilities/reactflow-umd.js"></script>
+  <script src="./utilities/canvas-to-img.js"></script>
   <link rel="stylesheet" href="./utilities/reactflow-style.css">
   <link rel="stylesheet" href="./styles/index.css">
 </head>
@@ -323,7 +324,48 @@
         // Edit table
         const confirmEditNode = () => {
           if (!editNodeModal || !formLabel.trim()) return;
-          setNodes(ns => ns.map(n => n.id === editNodeModal.nodeId ? { ...n, data: { ...n.data, label: formLabel.trim(), color: formColor } } : n));
+
+          const oldNode = nodes.find(n => n.id === editNodeModal.nodeId);
+          const oldLabel = oldNode?.data?.label;
+          const newLabel = formLabel.trim();
+
+          setNodes(ns => ns.map(n => {
+            if (n.id !== editNodeModal.nodeId) return n;
+
+            // Recalculer les IDs des champs avec le nouveau nom de table
+            const updatedFields = n.data.fields.map(f => {
+              const fieldName = f.name;
+              return {
+                ...f,
+                id: `${newLabel}_${fieldName}`  // nouvel ID
+              };
+            });
+
+            return { ...n, data: { ...n.data, label: newLabel, color: formColor, fields: updatedFields } };
+          }));
+
+          // Mettre à jour les edges qui référencent les anciens handles
+          setEdges(es => es.map(e => {
+            let updated = { ...e };
+
+            // Rebuilder sourceHandle si il appartient à ce nœud
+            if (e.source === editNodeModal.nodeId && e.sourceHandle) {
+              // ex: "oldLabel_email-s" → "newLabel_email-s"
+              const oldFieldId = e.sourceHandle.replace(/-s$/, '');          // "oldLabel_email"
+              const fieldName = oldFieldId.replace(`${oldLabel}_`, '');     // "email"
+              updated.sourceHandle = `${newLabel}_${fieldName}-s`;
+            }
+
+            // Rebuilder targetHandle si il appartient à ce nœud
+            if (e.target === editNodeModal.nodeId && e.targetHandle) {
+              const oldFieldId = e.targetHandle.replace(/-t$/, '');
+              const fieldName = oldFieldId.replace(`${oldLabel}_`, '');
+              updated.targetHandle = `${newLabel}_${fieldName}-t`;
+            }
+
+            return updated;
+          }));
+
           setEditNodeModal(null);
         };
 
@@ -593,6 +635,41 @@
           URL.revokeObjectURL(url);
         };
 
+        // EXport comme images
+        const exportAsImage = () => {
+          // React Flow place le canvas dans un div .react-flow__renderer
+          const canvas = document.querySelector('.react-flow__viewport');
+          const wrapper = document.querySelector('.react-flow');
+
+          if (!wrapper) return;
+
+          // Masquer temporairement les contrôles et la toolbar
+          const controls = document.querySelector('.react-flow__controls');
+          const panel = document.querySelector('.react-flow__panel');
+          if (controls) controls.style.visibility = 'hidden';
+
+          htmlToImage.toPng(wrapper, {
+            backgroundColor: '#0c0d0f',   // ta var(--bg)
+            pixelRatio: 2,                // x2 pour avoir du retina
+            filter: (node) => {
+              // Exclure les contrôles du rendu
+              if (node.classList?.contains('react-flow__controls')) return false;
+              if (node.classList?.contains('react-flow__panel')) return false;
+              return true;
+            }
+          })
+            .then(dataUrl => {
+              const a = document.createElement('a');
+              a.href = dataUrl;
+              a.download = `mapping_${Date.now()}.png`;
+              a.click();
+            })
+            .catch(err => console.error('Export image échoué :', err))
+            .finally(() => {
+              if (controls) controls.style.visibility = 'visible';
+            });
+        };
+
         const hasNodes = nodes.length > 0;
 
         return h(Fragment, null,
@@ -677,6 +754,15 @@
                 )
                 // → Ajoute tes prochaines options ici, même structure
               )
+            ),
+            // Exporte comme images quand il y a des noeuds
+            hasNodes && h('button', { className: 'tb-btn', onClick: exportAsImage },
+              h('svg', { width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' },
+                h('rect', { x: 3, y: 3, width: 18, height: 18, rx: 2 }),
+                h('circle', { cx: 8.5, cy: 8.5, r: 1.5 }),
+                h('polyline', { points: '21 15 16 10 5 21' })
+              ),
+              ' Exporter image'
             ),
             hasNodes && h('button', {
               className: 'tb-btn',

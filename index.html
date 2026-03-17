@@ -79,6 +79,32 @@
         h('path', { d: 'M15 4c2 0 3 1 3 3v2c0 1 1 2 2 2-1 0-2 1-2 2v2c0 2-1 3-3 3' })
       );
 
+      const IconExport = () => h(
+        'svg', {
+        width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round'
+      },
+        h('path', { d: 'M12 16V4' }),
+        h('path', { d: 'M8 8l4-4 4 4' }),
+        h('path', { d: 'M4 20h16' })
+      );
+
+      const IconImport = () => h(
+        'svg',
+        {
+          width: 13,
+          height: 13,
+          viewBox: '0 0 24 24',
+          fill: 'none',
+          stroke: 'currentColor',
+          strokeWidth: 2,
+          strokeLinecap: 'round',
+          strokeLinejoin: 'round'
+        },
+        h('path', { d: 'M12 4v12' }),
+        h('path', { d: 'M8 12l4 4 4-4' }),
+        h('path', { d: 'M4 20h16' })
+      );
+
       // ---- TABLE NODE ----
       function TableNode({ id, data }) {
         const color = data.color || COLORS[0];
@@ -143,6 +169,80 @@
         );
       }
 
+      function FileLoader({ onLoad, onError, accept = '.node.mapper', label = 'Charger un fichier' }) {
+        const inputRef = useRef(null);
+        const [dragging, setDragging] = useState(false);
+        const [fileName, setFileName] = useState('');
+
+        const processFile = (file) => {
+          // 1. Vérif extension
+          if (!file.name.endsWith('.node.mapper')) {
+            onError(`Extension invalide — fichier attendu : .node.mapper (reçu : "${file.name}")`);
+            return;
+          }
+
+          // 2. Vérif taille max (5MB)
+          if (file.size > 5 * 1024 * 1024) {
+            onError('Fichier trop volumineux (max 5MB).');
+            return;
+          }
+
+          // 3. Lecture
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            setFileName(file.name);
+            onLoad(e.target.result, file.name); // renvoie le contenu brut + nom
+          };
+          reader.onerror = () => onError('Erreur de lecture du fichier.');
+          reader.readAsText(file);
+        };
+
+        const onChange = (e) => {
+          const file = e.target.files[0];
+          if (file) processFile(file);
+          e.target.value = ''; // reset pour permettre de recharger le même fichier
+        };
+
+        const onDrop = (e) => {
+          e.preventDefault();
+          setDragging(false);
+          const file = e.dataTransfer.files[0];
+          if (file) processFile(file);
+        };
+
+        return h('div', {
+          className: 'file-loader' + (dragging ? ' dragging' : ''),
+          onClick: () => inputRef.current?.click(),
+          onDragOver: (e) => { e.preventDefault(); setDragging(true); },
+          onDragLeave: () => setDragging(false),
+          onDrop,
+        },
+          h('input', {
+            ref: inputRef,
+            type: 'file',
+            accept,
+            onChange,
+            style: { display: 'none' }
+          }),
+          h('div', { className: 'file-loader-icon' },
+            h('svg', { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round', strokeLinejoin: 'round' },
+              h('path', { d: 'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4' }),
+              h('polyline', { points: '17 8 12 3 7 8' }),
+              h('line', { x1: 12, y1: 3, x2: 12, y2: 15 })
+            )
+          ),
+          fileName
+            ? h('div', { className: 'file-loader-text' },
+              h('span', { className: 'file-loader-name' }, fileName),
+              h('span', { className: 'file-loader-hint' }, 'Cliquer pour changer')
+            )
+            : h('div', { className: 'file-loader-text' },
+              h('span', { className: 'file-loader-label' }, label),
+              h('span', { className: 'file-loader-hint' }, 'ou glisse un fichier .node.mapper ici')
+            )
+        );
+      }
+
       // ---- MAIN APP ----
       function App() {
         const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -162,6 +262,14 @@
         const [jsonTitle, setJsonTitle] = useState('');
         const [jsonText, setJsonText] = useState('');
         const [jsonError, setJsonError] = useState('');
+
+        // Import Graph
+        const [importGraphModal, setImportGraphModal] = useState(false);
+        const [importGraphError, setImportGraphError] = useState('');
+
+        // Export Graph
+        const [exportGraphModal, setExportGraphModal] = useState(false);
+        const [exportGraphError, setExportGraphError] = useState('');
 
         // Modals
         const [newTableModal, setNewTableModal] = useState(false);
@@ -222,8 +330,13 @@
         // Add field
         const confirmAddField = () => {
           if (!addFieldModal || !formFieldName.trim()) return;
+
+          // APRÈS — tu as besoin du label du nœud, donc cherche-le d'abord
+          const parentNode = nodes.find(n => n.id === addFieldModal.nodeId);
+          const tableName = parentNode?.data?.label || addFieldModal.nodeId;
+
           setNodes(ns => ns.map(n => n.id === addFieldModal.nodeId ?
-            { ...n, data: { ...n.data, fields: [...n.data.fields, { id: 'f' + Date.now(), name: formFieldName.trim(), type: formFieldType }] } } : n));
+            { ...n, data: { ...n.data, fields: [...n.data.fields, { id: `${tableName}_${formFieldName.trim()}`, name: formFieldName.trim(), type: formFieldType }] } } : n));
           setAddFieldModal(null);
         };
 
@@ -266,7 +379,7 @@
               else if (/^text|^clob/.test(rawType)) type = 'text';
               else if (/^json|^jsonb/.test(rawType)) type = 'json';
               else if (/^enum/.test(rawType)) type = 'enum';
-              fields.push({ id: 'f' + Date.now() + Math.random(), name: m[1], type });
+              fields.push({ id: `${tableName}_${m[1]}`, name: m[1], type });
             }
             tables.push({ name: tableName, fields });
           }
@@ -329,11 +442,7 @@
               else type = 'string';
             }
 
-            fields.push({
-              id: 'f' + Date.now() + Math.random(),
-              name: key,
-              type
-            });
+            fields.push({ id: `${jsonTitle}_${key}`, name: key, type });
           });
 
           const newNode = {
@@ -354,6 +463,135 @@
           setJsonTitle('');
         };
 
+        // Add from Graph
+        const importGraph = (graphJson) => {
+          setImportGraphError('');
+
+          // 1. Parse JSON
+          let graph;
+          try {
+            graph = typeof graphJson === 'string' ? JSON.parse(graphJson) : graphJson;
+          } catch (err) {
+            setImportGraphError('JSON invalide — vérifie la syntaxe.');
+            return;
+          }
+
+          // 2. Structure de base
+          if (typeof graph !== 'object' || graph === null) {
+            setImportGraphError('Le JSON doit être un objet.');
+            return;
+          }
+          if (!Array.isArray(graph.tables)) {
+            setImportGraphError('Champ "tables" manquant ou invalide.');
+            return;
+          }
+          if (!Array.isArray(graph.edges)) {
+            setImportGraphError('Champ "edges" manquant ou invalide.');
+            return;
+          }
+          if (graph.tables.length === 0) {
+            setImportGraphError('Le graphe ne contient aucune table.');
+            return;
+          }
+
+          // 3. Valider chaque table
+          const tableIds = new Set();
+          for (const [i, t] of graph.tables.entries()) {
+            if (!t.id) { setImportGraphError(`Table[${i}] : champ "id" manquant.`); return; }
+            if (!t.label) { setImportGraphError(`Table[${i}] : champ "label" manquant.`); return; }
+            if (!Array.isArray(t.fields)) { setImportGraphError(`Table "${t.label}" : champ "fields" invalide.`); return; }
+            if (tableIds.has(t.id)) { setImportGraphError(`ID de table en double : "${t.id}".`); return; }
+            tableIds.add(t.id);
+
+            // Valider chaque champ
+            const fieldIds = new Set();
+            for (const [j, f] of t.fields.entries()) {
+              if (!f.id) { setImportGraphError(`Table "${t.label}", field[${j}] : "id" manquant.`); return; }
+              if (!f.name) { setImportGraphError(`Table "${t.label}", field[${j}] : "name" manquant.`); return; }
+              if (fieldIds.has(f.id)) { setImportGraphError(`Table "${t.label}" : ID de champ en double "${f.id}".`); return; }
+              fieldIds.add(f.id);
+            }
+          }
+
+          // 4. Construire l'index des handles valides pour valider les edges
+          const validHandles = new Set();
+          for (const t of graph.tables) {
+            for (const f of t.fields) {
+              validHandles.add(`${f.id}-s`);
+              validHandles.add(`${f.id}-t`);
+            }
+          }
+
+          // 5. Valider chaque edge
+          for (const [i, e] of graph.edges.entries()) {
+            if (!e.source) { setImportGraphError(`Edge[${i}] : "source" manquant.`); return; }
+            if (!e.target) { setImportGraphError(`Edge[${i}] : "target" manquant.`); return; }
+            if (!e.sourceHandle) { setImportGraphError(`Edge[${i}] : "sourceHandle" manquant.`); return; }
+            if (!e.targetHandle) { setImportGraphError(`Edge[${i}] : "targetHandle" manquant.`); return; }
+            if (!tableIds.has(e.source)) { setImportGraphError(`Edge[${i}] : source "${e.source}" introuvable.`); return; }
+            if (!tableIds.has(e.target)) { setImportGraphError(`Edge[${i}] : target "${e.target}" introuvable.`); return; }
+            if (!validHandles.has(e.sourceHandle)) { setImportGraphError(`Edge[${i}] : sourceHandle "${e.sourceHandle}" introuvable.`); return; }
+            if (!validHandles.has(e.targetHandle)) { setImportGraphError(`Edge[${i}] : targetHandle "${e.targetHandle}" introuvable.`); return; }
+          }
+
+          // 6. Tout est valide — construire les nœuds et edges
+          const newNodes = graph.tables.map(t => ({
+            id: t.id,
+            type: 'tableNode',
+            position: t.position || { x: 80 + Math.random() * 400, y: 100 + Math.random() * 300 },
+            data: {
+              label: t.label,
+              color: t.color || COLORS[0],
+              fields: t.fields.map(f => ({
+                id: f.id,
+                name: f.name,
+                type: TYPES.includes(f.type) ? f.type : 'string'  // fallback si type inconnu
+              }))
+            }
+          }));
+
+          const newEdges = graph.edges.map((e, i) => ({
+            id: 'e' + Date.now() + i,
+            source: e.source,
+            sourceHandle: e.sourceHandle,
+            target: e.target,
+            targetHandle: e.targetHandle,
+            type: 'default',
+            animated: true,
+            style: { stroke: '#4f7cff', strokeWidth: 1.5 }
+          }));
+
+          setNodes(newNodes);
+          setEdges(newEdges);
+          setImportGraphModal(false);
+        };
+
+        // Export from Graph
+        const exportGraph = () => {
+          const graph = {
+            tables: nodes.map(n => ({
+              id: n.id,
+              label: n.data.label,
+              color: n.data.color,
+              position: n.position,
+              fields: n.data.fields
+            })),
+            edges: edges.map(e => ({
+              source: e.source,
+              sourceHandle: e.sourceHandle,
+              target: e.target,
+              targetHandle: e.targetHandle
+            }))
+          };
+
+          const blob = new Blob([JSON.stringify(graph, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `doc_${Date.now()}.node.mapper`;
+          a.click();
+          URL.revokeObjectURL(url);
+        };
 
         const hasNodes = nodes.length > 0;
 
@@ -423,6 +661,19 @@
                     h('span', { className: 'drop-item-label' }, 'Depuis JSON'),
                     h('span', { className: 'drop-item-desc' }, 'Importe via String')
                   )
+                ),
+                // Option 4 - Depuis les fichiers
+                h('button', {
+                  className: 'drop-item',
+                  onClick: () => { setShowAddMenu(false); setImportGraphModal(true); }
+                },
+                  h('div', { className: 'drop-item-icon' },
+                    h(IconImport)
+                  ),
+                  h('div', { className: 'drop-item-text' },
+                    h('span', { className: 'drop-item-label' }, 'Depuis Fichier'),
+                    h('span', { className: 'drop-item-desc' }, 'Importe via un fichier')
+                  )
                 )
                 // → Ajoute tes prochaines options ici, même structure
               )
@@ -433,6 +684,13 @@
               style: { color: '#ff5f57' }
             }, 'Tout effacer')
           ),
+
+          hasNodes && h('button', {
+            id: 'export', onClick: () => {
+              setExportGraphModal(true);
+            }
+          },
+            h('div', { className: 'export-title' }, h(IconExport), ' Export')),
 
           // Canvas
           h(ReactFlow, {
@@ -581,6 +839,35 @@
             h('div', { className: 'modal-actions' },
               h('button', { className: 'btn', onClick: () => setDeleteConfirm(null) }, 'Annuler'),
               h('button', { className: 'btn danger', onClick: confirmDeleteNode }, 'Supprimer')
+            )
+          ),
+
+          // MODAL: Exporter avec Success
+          exportGraphModal && h(Modal, { title: 'Exportation Réussie', onClose: () => setExportGraphModal(false) },
+            h('p', { style: { fontSize: 13, color: 'var(--text2)', marginBottom: 20, lineHeight: 1.6 } },
+              'Votre exportation a réussie, veillez vérifier votre presse-papier pour confirmer.'
+            ),
+            h('div', { className: 'modal-actions' },
+              h('button', {
+                className: 'btn', onClick: () => {
+                  exportGraph();
+                  setExportGraphModal(false);
+                }
+              }, 'OK'),
+            )
+          ),
+
+          // MODAL: Importation
+          importGraphModal && h(Modal, { title: 'Importer un graphe', onClose: () => { setImportGraphModal(false); setImportGraphError(''); } },
+            h(FileLoader, {
+              onLoad: (content, name) => {
+                importGraph(content); // ta fonction avec toutes les validations
+              },
+              onError: (msg) => setImportGraphError(msg),
+            }),
+            importGraphError && h('p', { style: { fontSize: 12, color: 'var(--red)', marginBottom: 16 } }, importGraphError),
+            h('div', { className: 'modal-actions' },
+              h('button', { className: 'btn', onClick: () => { setImportGraphModal(false); setImportGraphError(''); } }, 'Fermer')
             )
           )
         );

@@ -12,8 +12,8 @@ const createWindow = () => {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
 
   const win = new BrowserWindow({
-    width,
-    height,
+    width: width - 250,
+    height: height - 150,
     title: "Memohub-App",
     icon: path.join(__dirname, "logo.ico"),
     frame: false,

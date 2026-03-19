@@ -124,7 +124,7 @@ body,
 /* ---- TOOLBAR ---- */
 #toolbar {
   position: fixed;
-  top: 20px;
+  top: 62px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;

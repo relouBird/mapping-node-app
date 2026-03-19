@@ -3,7 +3,7 @@
 *::after {
   box-sizing: border-box;
   margin: 0;
-  padding: 0
+  padding: 0;
 }
 
 :root {
@@ -22,8 +22,8 @@
   --green: #3ecf8e;
   --green-bg: rgba(62, 207, 142, 0.1);
   --red: #ff5f57;
-  --font: 'DM Sans', sans-serif;
-  --mono: 'DM Mono', monospace;
+  --font: "DM Sans", sans-serif;
+  --mono: "DM Mono", monospace;
   --radius: 10px;
   --radius-lg: 14px;
 }
@@ -36,16 +36,16 @@ body,
   overflow: hidden;
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font)
+  font-family: var(--font);
 }
 
 /* ---- CANVAS ---- */
 .react-flow {
-  background: var(--bg) !important
+  background: var(--bg) !important;
 }
 
 .react-flow__background {
-  opacity: 1
+  opacity: 1;
 }
 
 .react-flow__controls {
@@ -57,7 +57,7 @@ body,
   border: 1px solid var(--border2);
   border-radius: var(--radius);
   padding: 4px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, .4)
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 .react-flow__controls-button {
@@ -67,32 +67,32 @@ body,
   width: 28px !important;
   height: 28px !important;
   border-radius: 6px !important;
-  transition: all .15s
+  transition: all 0.15s;
 }
 
 .react-flow__controls-button:hover {
   background: var(--bg4) !important;
-  color: var(--text) !important
+  color: var(--text) !important;
 }
 
 .react-flow__controls-button svg {
-  fill: currentColor !important
+  fill: currentColor !important;
 }
 
 .react-flow__edge-path {
   stroke: var(--accent) !important;
-  stroke-width: 1.5 !important
+  stroke-width: 1.5 !important;
 }
 
 .react-flow__edge.selected .react-flow__edge-path {
   stroke: var(--green) !important;
-  stroke-width: 2 !important
+  stroke-width: 2 !important;
 }
 
 .react-flow__connection-path {
   stroke: var(--accent) !important;
   stroke-width: 1.5 !important;
-  stroke-dasharray: 5 3
+  stroke-dasharray: 5 3;
 }
 
 .react-flow__handle {
@@ -101,7 +101,7 @@ body,
   border-radius: 50% !important;
   border: 1.5px solid var(--accent) !important;
   background: var(--bg) !important;
-  transition: all .15s !important;
+  transition: all 0.15s !important;
   opacity: 0 !important;
 }
 
@@ -114,17 +114,17 @@ body,
 
 .react-flow__node:hover .react-flow__handle,
 .react-flow__node.selected .react-flow__handle {
-  opacity: 1 !important
+  opacity: 1 !important;
 }
 
 .react-flow__attribution {
-  display: none
+  display: none;
 }
 
 /* ---- TOOLBAR ---- */
 #toolbar {
   position: fixed;
-  top: 20px;
+  top: 62px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -135,7 +135,8 @@ body,
   border-radius: 50px;
   padding: 6px 8px;
   z-index: 1000;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, .5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
 }
 
@@ -146,12 +147,12 @@ body,
   padding: 0 10px 0 6px;
   border-right: 1px solid var(--border);
   margin-right: 2px;
-  letter-spacing: .02em;
+  letter-spacing: 0.02em;
 }
 
 #toolbar .app-title span {
   color: var(--accent);
-  font-weight: 600
+  font-weight: 600;
 }
 
 .tb-btn {
@@ -167,27 +168,27 @@ body,
   padding: 6px 14px;
   border-radius: 40px;
   cursor: pointer;
-  transition: all .15s;
+  transition: all 0.15s;
   white-space: nowrap;
 }
 
 .tb-btn:hover {
   background: var(--bg4);
-  color: var(--text)
+  color: var(--text);
 }
 
 .tb-btn.primary {
   background: var(--accent);
   color: #fff;
-  font-weight: 500
+  font-weight: 500;
 }
 
 .tb-btn.primary:hover {
-  background: #6b91ff
+  background: #6b91ff;
 }
 
 .tb-btn svg {
-  flex-shrink: 0
+  flex-shrink: 0;
 }
 
 /* ------- EXPORT STATE ------ */
@@ -204,7 +205,8 @@ body,
   border-radius: 50px;
   padding: 11px 14px;
   z-index: 1000;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, .5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   cursor: pointer;
 }
@@ -220,7 +222,7 @@ body,
   gap: 10px;
   border-right: 1px solid var(--border);
   margin-right: 2px;
-  letter-spacing: .02em;
+  letter-spacing: 0.02em;
 }
 
 /* ---- EMPTY STATE ---- */
@@ -232,25 +234,25 @@ body,
   text-align: center;
   pointer-events: none;
   opacity: 1;
-  transition: opacity .4s;
+  transition: opacity 0.4s;
 }
 
 #empty.hidden {
-  opacity: 0
+  opacity: 0;
 }
 
 #empty h2 {
   font-size: 28px;
   font-weight: 300;
   color: var(--text3);
-  letter-spacing: -.02em;
-  margin-bottom: 8px
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
 }
 
 #empty p {
   font-size: 14px;
   color: var(--text3);
-  font-weight: 300
+  font-weight: 300;
 }
 
 #empty .arrow-hint {
@@ -270,19 +272,23 @@ body,
   border-radius: var(--radius-lg);
   min-width: 220px;
   font-family: var(--font);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, .4);
-  transition: box-shadow .2s, border-color .2s;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  transition:
+    box-shadow 0.2s,
+    border-color 0.2s;
   overflow: hidden;
 }
 
 .tbl-node:hover {
-  border-color: rgba(255, 255, 255, .18);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, .5);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
 .selected .tbl-node {
   border-color: var(--accent) !important;
-  box-shadow: 0 0 0 1px var(--accent), 0 8px 32px rgba(79, 124, 255, .15) !important;
+  box-shadow:
+    0 0 0 1px var(--accent),
+    0 8px 32px rgba(79, 124, 255, 0.15) !important;
 }
 
 .tbl-header {
@@ -296,27 +302,27 @@ body,
 }
 
 .tbl-header:active {
-  cursor: grabbing
+  cursor: grabbing;
 }
 
 .tbl-header-left {
   display: flex;
   align-items: center;
-  gap: 8px
+  gap: 8px;
 }
 
 .tbl-color-bar {
   width: 3px;
   height: 18px;
   border-radius: 2px;
-  flex-shrink: 0
+  flex-shrink: 0;
 }
 
 .tbl-name {
   font-size: 13px;
   font-weight: 500;
   color: var(--text);
-  letter-spacing: .01em
+  letter-spacing: 0.01em;
 }
 
 .tbl-count {
@@ -325,18 +331,18 @@ body,
   font-family: var(--mono);
   background: var(--bg4);
   padding: 2px 6px;
-  border-radius: 20px
+  border-radius: 20px;
 }
 
 .tbl-header-actions {
   display: flex;
   gap: 2px;
   opacity: 0;
-  transition: opacity .15s
+  transition: opacity 0.15s;
 }
 
 .tbl-node:hover .tbl-header-actions {
-  opacity: 1
+  opacity: 1;
 }
 
 .hdr-btn {
@@ -350,18 +356,18 @@ body,
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all .15s;
+  transition: all 0.15s;
   font-size: 12px;
 }
 
 .hdr-btn:hover {
   background: var(--bg4);
-  color: var(--text)
+  color: var(--text);
 }
 
 .hdr-btn.danger:hover {
-  background: rgba(255, 95, 87, .1);
-  color: var(--red)
+  background: rgba(255, 95, 87, 0.1);
+  color: var(--red);
 }
 
 .tbl-row {
@@ -371,16 +377,16 @@ body,
   align-items: center;
   gap: 8px;
   border-bottom: 1px solid var(--border);
-  transition: background .12s;
+  transition: background 0.12s;
   min-height: 34px;
 }
 
 .tbl-row:last-child {
-  border-bottom: none
+  border-bottom: none;
 }
 
 .tbl-row:hover {
-  background: var(--bg3)
+  background: var(--bg3);
 }
 
 .field-name {
@@ -389,7 +395,7 @@ body,
   font-weight: 400;
   color: var(--text);
   font-family: var(--mono);
-  letter-spacing: .01em;
+  letter-spacing: 0.01em;
 }
 
 .field-type {
@@ -399,29 +405,29 @@ body,
   background: var(--accent-bg);
   padding: 2px 7px;
   border-radius: 20px;
-  letter-spacing: .02em;
+  letter-spacing: 0.02em;
   flex-shrink: 0;
 }
 
 .field-type.t-int,
 .field-type.t-float {
   color: #c4a6ff;
-  background: rgba(196, 166, 255, .08)
+  background: rgba(196, 166, 255, 0.08);
 }
 
 .field-type.t-bool {
   color: var(--green);
-  background: var(--green-bg)
+  background: var(--green-bg);
 }
 
 .field-type.t-date {
   color: #ffb86c;
-  background: rgba(255, 184, 108, .08)
+  background: rgba(255, 184, 108, 0.08);
 }
 
 .field-type.t-uuid {
   color: var(--text3);
-  background: var(--bg4)
+  background: var(--bg4);
 }
 
 .field-del {
@@ -436,19 +442,19 @@ body,
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all .12s;
+  transition: all 0.12s;
   font-size: 14px;
   flex-shrink: 0;
 }
 
 .tbl-row:hover .field-del {
-  opacity: .6
+  opacity: 0.6;
 }
 
 .field-del:hover {
   opacity: 1 !important;
   color: var(--red);
-  background: rgba(255, 95, 87, .1)
+  background: rgba(255, 95, 87, 0.1);
 }
 
 .add-field-btn {
@@ -461,20 +467,19 @@ body,
   font-size: 11px;
   cursor: pointer;
   text-align: left;
-  transition: all .12s;
+  transition: all 0.12s;
   display: flex;
   align-items: center;
   gap: 6px;
-  letter-spacing: .02em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   font-weight: 500;
 }
 
 .add-field-btn:hover {
   background: var(--bg3);
-  color: var(--accent2)
+  color: var(--accent2);
 }
-
 
 /*-----------------FOR TOOLBAR--------------*/
 .drop-item {
@@ -488,12 +493,12 @@ body,
   border-radius: 7px;
   cursor: pointer;
   text-align: left;
-  transition: background .12s;
+  transition: background 0.12s;
   font-family: var(--font);
 }
 
 .drop-item:hover {
-  background: var(--bg4)
+  background: var(--bg4);
 }
 
 .drop-item-icon {
@@ -512,19 +517,19 @@ body,
 .drop-item-text {
   display: flex;
   flex-direction: column;
-  gap: 2px
+  gap: 2px;
 }
 
 .drop-item-label {
   font-size: 13px;
   font-weight: 500;
-  color: var(--text)
+  color: var(--text);
 }
 
 .drop-item-desc {
   font-size: 11px;
   color: var(--text3);
-  font-weight: 300
+  font-weight: 300;
 }
 
 /*-------------------------------------------*/
@@ -538,23 +543,27 @@ body,
   align-items: center;
   gap: 14px;
   cursor: pointer;
-  transition: all .15s;
+  transition: all 0.15s;
   margin-bottom: 16px;
   background: var(--bg3);
 }
-.file-loader:hover, .file-loader.dragging {
+.file-loader:hover,
+.file-loader.dragging {
   border-color: var(--accent);
   background: var(--accent-bg);
 }
 .file-loader-icon {
-  width: 40px; height: 40px;
+  width: 40px;
+  height: 40px;
   border-radius: 8px;
   background: var(--bg4);
   border: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   color: var(--text2);
-  transition: all .15s;
+  transition: all 0.15s;
 }
 .file-loader:hover .file-loader-icon,
 .file-loader.dragging .file-loader-icon {
@@ -562,32 +571,49 @@ body,
   border-color: var(--accent);
   background: var(--accent-bg);
 }
-.file-loader-text { display: flex; flex-direction: column; gap: 3px; }
-.file-loader-label { font-size: 13px; font-weight: 500; color: var(--text); }
-.file-loader-name  { font-size: 13px; font-weight: 500; color: var(--accent2); font-family: var(--mono); }
-.file-loader-hint  { font-size: 11px; color: var(--text3); }
+.file-loader-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.file-loader-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+.file-loader-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent2);
+  font-family: var(--mono);
+}
+.file-loader-hint {
+  font-size: 11px;
+  color: var(--text3);
+}
 /*-------------------------*/
 
 /* ---- MODAL ---- */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, .6);
+  background: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(4px);
   z-index: 2000;
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: fadeIn .15s ease;
+  animation: fadeIn 0.15s ease;
 }
 
 @keyframes fadeIn {
   from {
-    opacity: 0
+    opacity: 0;
   }
 
   to {
-    opacity: 1
+    opacity: 1;
   }
 }
 
@@ -599,19 +625,19 @@ body,
   min-width: 300px;
   max-width: 360px;
   width: 90%;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, .6);
-  animation: slideUp .2s cubic-bezier(.16, 1, .3, 1);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  animation: slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(12px)
+    transform: translateY(12px);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0)
+    transform: translateY(0);
   }
 }
 
@@ -620,7 +646,7 @@ body,
   font-weight: 500;
   color: var(--text);
   margin-bottom: 20px;
-  letter-spacing: -.01em
+  letter-spacing: -0.01em;
 }
 
 .modal label {
@@ -629,8 +655,8 @@ body,
   font-weight: 500;
   color: var(--text3);
   text-transform: uppercase;
-  letter-spacing: .06em;
-  margin-bottom: 6px
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
 }
 
 .modal input,
@@ -645,23 +671,23 @@ body,
   color: var(--text);
   outline: none;
   margin-bottom: 16px;
-  transition: border-color .15s;
+  transition: border-color 0.15s;
 }
 
 .modal input:focus,
 .modal select:focus {
-  border-color: var(--accent)
+  border-color: var(--accent);
 }
 
 .modal select option {
-  background: var(--bg3)
+  background: var(--bg3);
 }
 
 .color-swatches {
   display: flex;
   gap: 8px;
   margin-bottom: 20px;
-  flex-wrap: wrap
+  flex-wrap: wrap;
 }
 
 .color-swatch {
@@ -669,23 +695,27 @@ body,
   height: 24px;
   border-radius: 50%;
   cursor: pointer;
-  transition: transform .15s, box-shadow .15s;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
   border: 2px solid transparent;
 }
 
 .color-swatch:hover {
-  transform: scale(1.15)
+  transform: scale(1.15);
 }
 
 .color-swatch.active {
-  box-shadow: 0 0 0 2px var(--bg2), 0 0 0 4px currentColor
+  box-shadow:
+    0 0 0 2px var(--bg2),
+    0 0 0 4px currentColor;
 }
 
 .modal-actions {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
-  margin-top: 4px
+  margin-top: 4px;
 }
 
 .modal-actions .btn {
@@ -698,30 +728,30 @@ body,
   border: 1px solid var(--border2);
   background: var(--bg3);
   color: var(--text2);
-  transition: all .15s;
+  transition: all 0.15s;
 }
 
 .modal-actions .btn:hover {
   background: var(--bg4);
-  color: var(--text)
+  color: var(--text);
 }
 
 .modal-actions .btn.primary {
   background: var(--accent);
   color: #fff;
-  border-color: transparent
+  border-color: transparent;
 }
 
 .modal-actions .btn.primary:hover {
-  background: #6b91ff
+  background: #6b91ff;
 }
 
 .modal-actions .btn.danger {
-  background: rgba(255, 95, 87, .1);
+  background: rgba(255, 95, 87, 0.1);
   color: var(--red);
-  border-color: rgba(255, 95, 87, .2)
+  border-color: rgba(255, 95, 87, 0.2);
 }
 
 .modal-actions .btn.danger:hover {
-  background: rgba(255, 95, 87, .2)
+  background: rgba(255, 95, 87, 0.2);
 }

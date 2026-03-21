@@ -327,7 +327,12 @@
         const nodesWithApi = nodes.map(n => ({ ...n, data: { ...n.data, _api: api } }));
 
         const onConnect = useCallback(params =>
-          setEdges(es => addEdge({ ...params, type: 'default', animated: true, style: { stroke: '#4f7cff', strokeWidth: 1.5 } }, es)),
+          setEdges(es => addEdge({
+            ...params,
+            type: 'default',
+            animated: true,
+            style: { stroke: '#4f7cff', strokeWidth: 1.5 }
+          }, es)),
           [setEdges]
         );
 
@@ -811,7 +816,18 @@
             connectionLineStyle: { stroke: '#4f7cff', strokeWidth: 1.5, strokeDasharray: '5 3' },
             defaultEdgeOptions: { type: 'default', animated: true },
             deleteKeyCode: 'Delete',
-            proOptions: { hideAttribution: true }
+            proOptions: { hideAttribution: true },
+            // ← ajoute ça
+            onEdgeDoubleClick: (event, edge) => {
+              setEdges(es => es.map(e =>
+                e.id === edge.id
+                  ? { ...e, style: { stroke: '#ff5f57', strokeWidth: 2 }, animated: false }
+                  : e
+              ));
+              setTimeout(() => {
+                setEdges(es => es.filter(e => e.id !== edge.id));
+              }, 1500);
+            },
           },
             h(Background, {
               color: 'rgba(255,255,255,0.04)',

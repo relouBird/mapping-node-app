@@ -68,6 +68,8 @@ const createWindow = () => {
   // win.webContents.openDevTools();
 };
 
+if (require("electron-squirrel-startup")) app.quit();
+
 app.whenReady().then(() => {
   createWindow();
 

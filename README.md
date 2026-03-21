@@ -36,6 +36,9 @@ Rends-toi sur la page [**Releases**](https://github.com/relouBird/mapping-node-a
 
 Lance `MapFlow-Setup.exe` et suis les instructions. L'application s'installe sans droits administrateur.
 
+ou clique directement ici 
+Lien: https://github.com/relouBird/mapping-node-app/releases/download/v1.1.0/mapping-node-app-1.1.0.Setup.exe
+
 ---
 
 ## Installation — Développeurs
